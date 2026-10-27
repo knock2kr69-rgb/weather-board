@@ -50,6 +50,44 @@ function judge(kind, w) {
   return { level: 'ok', text: '진행' };
 }
 
+function escapeMarkdownTableCell(value) {
+  return String(value ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
+// 현재 일정과 날씨를 내려받을 마크다운 문서로 만들기
+function createJudgmentMarkdown(tasks, weatherByRegion, date) {
+  const lines = [
+    `# 현장 일정 판단 (${date})`,
+    '',
+    '| 일정 | 지역 | 구분 | 담당 | 날씨 | 판단 |',
+    '|---|---|---|---|---|---|',
+  ];
+
+  for (const task of tasks) {
+    const weather = weatherByRegion[task.region];
+    const weatherLabel = weather
+      ? `${weather.tempMax}℃ · ${weather.windMax}m/s · ${weather.rainProb}%`
+      : '-';
+    const result = judge(task.kind, weather);
+    const cells = [task.title, task.region, task.kind, task.owner, weatherLabel, result.text]
+      .map(escapeMarkdownTableCell);
+    lines.push(`| ${cells.join(' | ')} |`);
+  }
+
+  lines.push(
+    '',
+    `판단 기준: 풍속 ${RULES.wind}m/s 이상 · 강수확률 ${RULES.rain}% 이상 · 기온 ${RULES.heat}℃ 이상`,
+  );
+  return `${lines.join('\n')}\n`;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { RULES, REGIONS, buildWeatherUrl, parseWeatherResponse, judge };
+  module.exports = {
+    RULES,
+    REGIONS,
+    buildWeatherUrl,
+    parseWeatherResponse,
+    judge,
+    createJudgmentMarkdown,
+  };
 }

@@ -5,11 +5,15 @@ let tasks = [];
 let weatherByRegion = {};
 
 function displayTodayDate() {
+  document.getElementById('todayDate').textContent = getTodayDate();
+}
+
+function getTodayDate() {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
-  document.getElementById('todayDate').textContent = `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}`;
 }
 
 function getSavedTasks() {
@@ -117,7 +121,20 @@ function addTask(e) {
   renderTasks();
 }
 
+function downloadTodayMarkdown() {
+  const date = getTodayDate();
+  const markdown = createJudgmentMarkdown(tasks, weatherByRegion, date);
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `현장일정_판단_${date}.md`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 document.getElementById('taskForm').addEventListener('submit', addTask);
+document.getElementById('downloadMdButton').addEventListener('click', downloadTodayMarkdown);
 displayTodayDate();
 
 async function initializeApp() {
