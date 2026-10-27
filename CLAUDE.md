@@ -13,6 +13,8 @@
 - style.css  : 디자인
 - logic.js   : 판단 규칙만 (화면을 다루는 코드 금지)
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
+- config.js  : Supabase 주소 · 공개용 키
+- setup.sql  : Supabase wx_tasks 표 · 권한 · 초기 데이터
 - PRD.md · CLAUDE.md · README.md : 문서
 
 ## 작업 방식
@@ -22,6 +24,8 @@
 
 ## 보안 · 데이터 규칙
 - 가상 데이터만 사용한다. 실제 이름 · 연락처 · 기관 내부 자료를 넣지 않는다.
-- 데이터는 data/ 폴더 JSON에 둔다.
+- 일정 데이터는 Supabase wx_tasks 표에 둔다.
+- config.js에는 Supabase 주소와 공개용 키만 둔다.
+- service_role 키와 비밀 키는 코드 · 채팅 · GitHub에 절대 넣지 않는다.
 - 사용자가 입력한 글자는 textContent 로 표시한다.
 - 비밀 키는 코드 · 채팅 · GitHub 에 넣지 않는다.

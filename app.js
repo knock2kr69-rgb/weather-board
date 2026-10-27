@@ -1,8 +1,8 @@
 // app.js – 화면 동작 (목록 그리기, 일정 추가)
 
-let baseTasks = [];
 let tasks = [];
 let weatherByRegion = {};
+let supabaseClient;
 
 function displayTodayDate() {
   document.getElementById('todayDate').textContent = getTodayDate();
@@ -16,32 +16,29 @@ function getTodayDate() {
   return `${year}-${month}-${day}`;
 }
 
-function getSavedTasks() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('wx_added') || '[]');
-    return Array.isArray(saved) ? saved : [];
-  } catch (error) {
-    console.error('브라우저 저장 일정을 읽지 못했습니다.', error);
-    return [];
+function connectSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_PUBLISHABLE_KEY === 'YOUR_SUPABASE_PUBLISHABLE_KEY') {
+    throw new Error('config.js에 Supabase 주소와 공개용 키를 입력해 주세요.');
   }
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 }
 
 async function loadTasks() {
   const msgBox = document.getElementById('msgBox');
   try {
-    const response = await fetch('data/tasks.json');
-    if (!response.ok) throw new Error(`일정 요청 실패 (${response.status})`);
-    const data = await response.json();
-    if (!Array.isArray(data)) throw new Error('일정 JSON 형식이 올바르지 않습니다.');
-    baseTasks = data;
+    const { data, error } = await supabaseClient
+      .from('wx_tasks')
+      .select('id,title,region,kind,owner,created_at')
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true });
+    if (error) throw error;
+    tasks = data || [];
+    msgBox.textContent = '';
   } catch (error) {
-    baseTasks = [];
+    tasks = [];
     console.error(error);
-    msgBox.textContent = window.location.protocol === 'file:'
-      ? '배포 주소로 열어 주세요'
-      : '기본 일정 목록을 불러오지 못했습니다.';
+    msgBox.textContent = `일정 목록을 불러오지 못했습니다: ${error.message}`;
   }
-  tasks = baseTasks.concat(getSavedTasks());
 }
 
 function weatherText(w) {
@@ -104,8 +101,10 @@ async function loadWeather() {
   }
 }
 
-function addTask(e) {
+async function addTask(e) {
   e.preventDefault();
+  const msgBox = document.getElementById('msgBox');
+  const submitButton = e.target.querySelector('button');
   const t = {
     title: document.getElementById('titleInput').value.trim(),
     region: document.getElementById('regionInput').value,
@@ -113,12 +112,21 @@ function addTask(e) {
     owner: document.getElementById('ownerInput').value.trim(),
   };
   if (!t.title || !t.owner) return;
-  const saved = getSavedTasks();
-  saved.push(t);
-  localStorage.setItem('wx_added', JSON.stringify(saved));
-  e.target.reset();
-  tasks = baseTasks.concat(saved);
-  renderTasks();
+  submitButton.disabled = true;
+  msgBox.textContent = '일정을 저장하는 중입니다.';
+  try {
+    const { error } = await supabaseClient.from('wx_tasks').insert(t);
+    if (error) throw error;
+    e.target.reset();
+    await loadTasks();
+    renderTasks();
+    msgBox.textContent = '일정을 저장했습니다.';
+  } catch (error) {
+    console.error(error);
+    msgBox.textContent = `일정을 저장하지 못했습니다: ${error.message}`;
+  } finally {
+    submitButton.disabled = false;
+  }
 }
 
 function downloadTodayMarkdown() {
@@ -138,6 +146,15 @@ document.getElementById('downloadMdButton').addEventListener('click', downloadTo
 displayTodayDate();
 
 async function initializeApp() {
+  try {
+    connectSupabase();
+  } catch (error) {
+    console.error(error);
+    document.getElementById('msgBox').textContent = error.message;
+    renderTasks();
+    loadWeather();
+    return;
+  }
   await loadTasks();
   renderTasks();
   loadWeather();
