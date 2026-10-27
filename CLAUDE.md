@@ -15,6 +15,7 @@
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
 - config.js  : Supabase 주소 · 공개용 키
 - setup.sql  : Supabase wx_tasks 표 · 권한 · 초기 데이터
+- api/kma.js : DB 일정 · 기상청 날씨 · 판단을 반환하는 Vercel 함수
 - PRD.md · CLAUDE.md · README.md : 문서
 
 ## 작업 방식
@@ -27,5 +28,6 @@
 - 일정 데이터는 Supabase wx_tasks 표에 둔다.
 - config.js에는 Supabase 주소와 공개용 키만 둔다.
 - service_role 키와 비밀 키는 코드 · 채팅 · GitHub에 절대 넣지 않는다.
+- KMA_KEY는 Vercel 서버 환경변수에서만 읽고 코드 · 응답 · 로그에 넣지 않는다.
 - 사용자가 입력한 글자는 textContent 로 표시한다.
 - 비밀 키는 코드 · 채팅 · GitHub 에 넣지 않는다.

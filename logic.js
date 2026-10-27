@@ -40,6 +40,27 @@ function parseWeatherResponse(data, testWind = false) {
   return { tempMax, windMax: testWind ? 12 : windMax, rainProb };
 }
 
+// 기상청 단기예보의 오늘 시간별 값을 하루 최댓값으로 바꾸기
+function parseKmaForecast(items, targetDate) {
+  if (!Array.isArray(items)) throw new Error('기상청 예보 항목이 없습니다.');
+  const values = { TMP: [], WSD: [], POP: [] };
+
+  for (const item of items) {
+    if (item.fcstDate !== targetDate || !values[item.category]) continue;
+    const value = Number(item.fcstValue);
+    if (Number.isFinite(value)) values[item.category].push(value);
+  }
+
+  if (!values.TMP.length || !values.WSD.length || !values.POP.length) {
+    throw new Error('오늘 기상청 예보 값이 충분하지 않습니다.');
+  }
+  return {
+    tempMax: Math.max(...values.TMP),
+    windMax: Math.max(...values.WSD),
+    rainProb: Math.max(...values.POP),
+  };
+}
+
 // 일정 구분과 날씨로 판단 (w가 없으면 '날씨 확인 전')
 function judge(kind, w) {
   if (!w) return { level: 'none', text: '날씨 확인 전' };
@@ -87,6 +108,7 @@ if (typeof module !== 'undefined') {
     REGIONS,
     buildWeatherUrl,
     parseWeatherResponse,
+    parseKmaForecast,
     judge,
     createJudgmentMarkdown,
   };
